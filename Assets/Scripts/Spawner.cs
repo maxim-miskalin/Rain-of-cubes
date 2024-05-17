@@ -42,9 +42,7 @@ public class Spawner : MonoBehaviour
         cube.TurnOff();
 
         if (cube.IsOn == false)
-        {
             StartCoroutine(ReturnToPool(cube, _timeLife));
-        }
     }
 
     private void GetCube()
@@ -60,7 +58,6 @@ public class Spawner : MonoBehaviour
         cube.TurnOn();
         cube.transform.position = position;
         cube.transform.rotation = Quaternion.Euler(rotation);
-
         cube.gameObject.SetActive(true);
     }
 

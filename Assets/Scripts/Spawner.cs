@@ -13,6 +13,7 @@ public class Spawner : MonoBehaviour
 
     private float _maxRotationEuler = 361f;
     private float _minPositionX, _maxPositionX, _positionY, _minPositionZ, _maxPositionZ;
+    private float _offsetY = 1f;
     private ObjectPool<Cube> _pool;
     private bool _isWork = true;
 
@@ -20,7 +21,7 @@ public class Spawner : MonoBehaviour
     {
         _minPositionX = GetComponent<Collider>().bounds.min.x;
         _maxPositionX = GetComponent<Collider>().bounds.max.x;
-        _positionY = GetComponent<Collider>().bounds.center.y;
+        _positionY = GetComponent<Collider>().bounds.center.y - _offsetY;
         _minPositionZ = GetComponent<Collider>().bounds.min.z;
         _maxPositionZ = GetComponent<Collider>().bounds.max.z;
 
@@ -29,12 +30,12 @@ public class Spawner : MonoBehaviour
 
     private void OnEnable()
     {
-        Cube.RemoveToPool += DestroyCube;
+        Cube.RemovedToPool += DestroyCube;
     }
 
     private void OnDisable()
     {
-        Cube.RemoveToPool -= DestroyCube;
+        Cube.RemovedToPool -= DestroyCube;
     }
 
     private void Start()

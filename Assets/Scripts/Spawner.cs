@@ -3,39 +3,40 @@ using UnityEngine;
 using UnityEngine.Pool;
 using Quaternion = UnityEngine.Quaternion;
 
-[RequireComponent(typeof(MeshCollider))]
+[RequireComponent(typeof(Collider))]
 public class Spawner : MonoBehaviour
 {
     [SerializeField] private Cube _prefab;
     [SerializeField] private float _repeadRate = 1f;
     [SerializeField] private int _poolCapacity = 10;
     [SerializeField] private int _poolMaxSize = 10;
+    [SerializeField] private float _minLifeTimeCube = 2f;
+    [SerializeField] private float _maxLifeTimeCube = 5f;
 
-    private float _maxRotationEuler = 361f;
-    private float _minPositionX, _maxPositionX, _positionY, _minPositionZ, _maxPositionZ;
-    private float _offsetY = 1f;
+
+    private Collider _collider;
     private ObjectPool<Cube> _pool;
+    private float _offsetY = 1f;
     private bool _isWork = true;
+    private float _maxRotationEuler = 361f;
+
+    private float _minPositionX;
+    private float _maxPositionX;
+    private float _positionY;
+    private float _minPositionZ;
+    private float _maxPositionZ;
 
     private void Awake()
     {
-        _minPositionX = GetComponent<Collider>().bounds.min.x;
-        _maxPositionX = GetComponent<Collider>().bounds.max.x;
-        _positionY = GetComponent<Collider>().bounds.center.y - _offsetY;
-        _minPositionZ = GetComponent<Collider>().bounds.min.z;
-        _maxPositionZ = GetComponent<Collider>().bounds.max.z;
+        _collider = GetComponent<Collider>();
 
-        _pool = new(() => Instantiate(_prefab), ActionOnGet, (cube) => cube.gameObject.SetActive(false), Destroy, true, _poolCapacity, _poolMaxSize);
-    }
+        _minPositionX = _collider.bounds.min.x;
+        _maxPositionX = _collider.bounds.max.x;
+        _positionY = _collider.bounds.center.y - _offsetY;
+        _minPositionZ = _collider.bounds.min.z;
+        _maxPositionZ = _collider.bounds.max.z;
 
-    private void OnEnable()
-    {
-        Cube.RemovedToPool += DestroyCube;
-    }
-
-    private void OnDisable()
-    {
-        Cube.RemovedToPool -= DestroyCube;
+        _pool = new(CreateCube, ContinueAction, (cube) => cube.gameObject.SetActive(false), Destroy, true, _poolCapacity, _poolMaxSize);
     }
 
     private void Start()
@@ -43,12 +44,21 @@ public class Spawner : MonoBehaviour
         StartCoroutine(GetCube());
     }
 
-    public void DestroyCube(Cube cube, float _timeLife)
+    private Cube CreateCube()
     {
-        StartCoroutine(ReturnToPool(cube, _timeLife));
+        Cube cube = Instantiate(_prefab);
+        cube.RemovedToPool += ReturnCube;
+        cube.gameObject.SetActive(false);
+
+        return cube;
     }
 
-    private void ActionOnGet(Cube cube)
+    public void ReturnCube(Cube cube)
+    {
+        StartCoroutine(ReturnToPool(cube));
+    }
+
+    private void ContinueAction(Cube cube)
     {
         Vector3 position = new(Random.Range(_minPositionX, _maxPositionX), _positionY, Random.Range(_minPositionZ, _maxPositionZ));
         Vector3 rotation = new(Random.Range(0, _maxRotationEuler), Random.Range(0, _maxRotationEuler), Random.Range(0, _maxRotationEuler));
@@ -68,9 +78,10 @@ public class Spawner : MonoBehaviour
         }
     }
 
-    private IEnumerator ReturnToPool(Cube cube, float _timeLife)
+    private IEnumerator ReturnToPool(Cube cube)
     {
-        yield return new WaitForSeconds(_timeLife);
+        float timeLife = Random.Range(_minLifeTimeCube, _maxLifeTimeCube);
+        yield return new WaitForSeconds(timeLife);
         _pool.Release(cube);
     }
 }

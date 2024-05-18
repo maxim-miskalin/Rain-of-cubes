@@ -2,34 +2,33 @@ using System;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-[RequireComponent(typeof(Renderer))]
+[RequireComponent(typeof(Renderer), typeof(Collider))]
 public class Cube : MonoBehaviour
 {
-    public static Action<Cube, float> RemovedToPool;
+    public event Action<Cube> RemovedToPool;
 
-    [SerializeField] private float _minLifeTime = 2f;
-    [SerializeField] private float _maxLifeTime = 5f;
 
     private bool _isOn = true;
     private Color _defaultColor;
     private Renderer _renderer;
-
-    public bool IsOn => _isOn;
+    private Collider _collider;
 
     private void Awake()
     {
+        _collider = GetComponent<Collider>();
         _renderer = GetComponent<Renderer>();
         _defaultColor = _renderer.material.color;
     }
 
     private void OnTriggerEnter(Collider collider)
     {
-        if (_isOn)
+        if (_collider != collider)
         {
-            float timeLife = Random.Range(_minLifeTime, _maxLifeTime);
-
-            TurnOff();
-            RemovedToPool?.Invoke(this, timeLife);
+            if (_isOn)
+            {
+                TurnOff();
+                RemovedToPool?.Invoke(this);
+            }
         }
     }
 

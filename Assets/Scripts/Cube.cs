@@ -5,13 +5,12 @@ using Random = UnityEngine.Random;
 [RequireComponent(typeof(Renderer), typeof(Collider))]
 public class Cube : MonoBehaviour
 {
-    public event Action<Cube> RemovedToPool;
-
-
     private bool _isOn = true;
     private Color _defaultColor;
     private Renderer _renderer;
     private Collider _collider;
+
+    public event Action<Cube> RemovedToPool;
 
     private void Awake()
     {

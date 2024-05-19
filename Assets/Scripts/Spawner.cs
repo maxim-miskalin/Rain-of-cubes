@@ -13,7 +13,6 @@ public class Spawner : MonoBehaviour
     [SerializeField] private float _minLifeTimeCube = 2f;
     [SerializeField] private float _maxLifeTimeCube = 5f;
 
-
     private Collider _collider;
     private ObjectPool<Cube> _pool;
     private float _offsetY = 1f;
@@ -36,12 +35,25 @@ public class Spawner : MonoBehaviour
         _minPositionZ = _collider.bounds.min.z;
         _maxPositionZ = _collider.bounds.max.z;
 
-        _pool = new(CreateCube, ContinueAction, (cube) => cube.gameObject.SetActive(false), Destroy, true, _poolCapacity, _poolMaxSize);
+        _pool = new(CreateCube, ContinueAction, (cube) => cube.gameObject.SetActive(false), DestroyCube, true, _poolCapacity, _poolMaxSize);
     }
 
     private void Start()
     {
         StartCoroutine(GetCube());
+    }
+    private IEnumerator GetCube()
+    {
+        while (_isWork)
+        {
+            _pool.Get();
+            yield return new WaitForSeconds(_repeadRate);
+        }
+    }
+
+    private void ReturnCube(Cube cube)
+    {
+        StartCoroutine(ReturnToPool(cube));
     }
 
     private Cube CreateCube()
@@ -51,11 +63,6 @@ public class Spawner : MonoBehaviour
         cube.gameObject.SetActive(false);
 
         return cube;
-    }
-
-    public void ReturnCube(Cube cube)
-    {
-        StartCoroutine(ReturnToPool(cube));
     }
 
     private void ContinueAction(Cube cube)
@@ -69,13 +76,10 @@ public class Spawner : MonoBehaviour
         cube.gameObject.SetActive(true);
     }
 
-    private IEnumerator GetCube()
+    private void DestroyCube(Cube cube)
     {
-        while (_isWork)
-        {
-            _pool.Get();
-            yield return new WaitForSeconds(_repeadRate);
-        }
+        cube.RemovedToPool -= ReturnCube;
+        Destroy(cube.gameObject);
     }
 
     private IEnumerator ReturnToPool(Cube cube)

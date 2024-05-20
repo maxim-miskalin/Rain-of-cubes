@@ -42,6 +42,7 @@ public class Spawner : MonoBehaviour
     {
         StartCoroutine(GetCube());
     }
+
     private IEnumerator GetCube()
     {
         while (_isWork)

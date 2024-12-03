@@ -3,11 +3,11 @@ using UnityEngine;
 
 public class SpawnerView : MonoBehaviour
 {
-    [SerializeField] SpawnerInfo _spawnerInfo;
-    [SerializeField] TextMeshProUGUI _name;
-    [SerializeField] TextMeshProUGUI _textCreatedCount;
-    [SerializeField] TextMeshProUGUI _textSpawnedCount;
-    [SerializeField] TextMeshProUGUI _createAtivedCount;
+    [SerializeField] private SpawnerInfo _spawnerInfo;
+    [SerializeField] private TextMeshProUGUI _name;
+    [SerializeField] private TextMeshProUGUI _textCreatedCount;
+    [SerializeField] private TextMeshProUGUI _textSpawnedCount;
+    [SerializeField] private TextMeshProUGUI _createAtivedCount;
 
     private void OnEnable()
     {

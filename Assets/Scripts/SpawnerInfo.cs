@@ -12,19 +12,19 @@ public class SpawnerInfo : MonoBehaviour
     public event Action<int> ObjectsSpawned;
     public event Action<int> ObjectsActived;
 
-    public void CountCreate()
+    public void IncreaseCountCreate()
     {
         _countCreate++;
         ObjectsCreated?.Invoke(_countCreate);
     }
 
-    public void CountSpawn()
+    public void IncreaseCountSpawn()
     {
         _countSpawn++;
         ObjectsSpawned?.Invoke(_countSpawn);
     }
 
-    public void CountActive(int count)
+    public void IncreaseCountActive(int count)
     {
         if (_countActive != count)
         {

@@ -10,13 +10,13 @@ public class Spawner<T> : MonoBehaviour where T : PoolableObject
     [SerializeField] private int _poolMaxSize = 20;
 
     private ObjectPool<T> _pool;
-    private SpawnerInfo _spawnerInfo;
+    private SpawnerInfo _info;
 
     public event Action<Transform> ObjectDespawned;
 
     protected virtual void Awake()
     {
-        _spawnerInfo = GetComponent<SpawnerInfo>();
+        _info = GetComponent<SpawnerInfo>();
         _pool = new ObjectPool<T>(
             CreateObject,
             ActionOnGet,
@@ -30,7 +30,7 @@ public class Spawner<T> : MonoBehaviour where T : PoolableObject
     private T CreateObject()
     {
         T obj = Instantiate(_prefab);
-        _spawnerInfo.CountCreate();
+        _info.IncreaseCountCreate();
         obj.transform.SetParent(transform);
         obj.Deactivated += ReturnObject;
         return obj;
@@ -38,8 +38,8 @@ public class Spawner<T> : MonoBehaviour where T : PoolableObject
 
     protected virtual void ActionOnGet(T obj)
     {
-        _spawnerInfo.CountSpawn();
-        _spawnerInfo.CountActive(_pool.CountActive);
+        _info.IncreaseCountSpawn();
+        _info.IncreaseCountActive(_pool.CountActive);
         obj.ResetState();
         obj.gameObject.SetActive(true);
     }
@@ -53,7 +53,7 @@ public class Spawner<T> : MonoBehaviour where T : PoolableObject
     private void ReturnObject(PoolableObject obj)
     {
         ObjectDespawned?.Invoke(obj.transform);
-        _spawnerInfo.CountActive(_pool.CountActive);
+        _info.IncreaseCountActive(_pool.CountActive);
         _pool.Release(obj as T);
     }
 

@@ -1,45 +1,37 @@
-using System;
+using System.Collections;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
-[RequireComponent(typeof(Renderer), typeof(Collider))]
-public class Cube : MonoBehaviour
+[RequireComponent(typeof(Renderer))]
+public class Cube : PoolableObject
 {
-    private bool _isOn = true;
     private Color _defaultColor;
-    private Renderer _renderer;
-    private Collider _collider;
+    private bool _isOn = false;
 
-    public event Action<Cube> RemovedToPool;
+    private Renderer _renderer;
 
     private void Awake()
     {
-        _collider = GetComponent<Collider>();
         _renderer = GetComponent<Renderer>();
         _defaultColor = _renderer.material.color;
     }
 
     private void OnTriggerEnter(Collider collider)
     {
-        if (_collider != collider)
-        {
-            if (_isOn)
-            {
-                TurnOff();
-                RemovedToPool?.Invoke(this);
-            }
-        }
+        if (collider.TryGetComponent(out Platform _) && _isOn)
+            StartCoroutine(WaitDeactivation());
     }
 
-    public void TurnOn()
+    public override void ResetState()
     {
         _isOn = true;
         _renderer.material.color = _defaultColor;
     }
 
-    private void TurnOff()
+    private IEnumerator WaitDeactivation()
     {
         _isOn = false;
         _renderer.material.color = Random.ColorHSV();
+        yield return new WaitForSeconds(Random.Range(MinLifeTime, MaxLifeTime));
+        Deactivate();
     }
 }

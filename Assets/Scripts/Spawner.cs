@@ -1,92 +1,64 @@
-using System.Collections;
+using System;
 using UnityEngine;
 using UnityEngine.Pool;
-using Quaternion = UnityEngine.Quaternion;
 
-[RequireComponent(typeof(Collider))]
-public class Spawner : MonoBehaviour
+[RequireComponent(typeof(SpawnerInfo))]
+public class Spawner<T> : MonoBehaviour where T : PoolableObject
 {
-    [SerializeField] private Cube _prefab;
-    [SerializeField] private float _repeadRate = 1f;
+    [SerializeField] private T _prefab;
     [SerializeField] private int _poolCapacity = 10;
-    [SerializeField] private int _poolMaxSize = 10;
-    [SerializeField] private float _minLifeTimeCube = 2f;
-    [SerializeField] private float _maxLifeTimeCube = 5f;
+    [SerializeField] private int _poolMaxSize = 20;
 
-    private Collider _collider;
-    private ObjectPool<Cube> _pool;
-    private float _offsetY = 1f;
-    private bool _isWork = true;
-    private float _maxRotationEuler = 361f;
+    private ObjectPool<T> _pool;
+    private SpawnerInfo _spawnerInfo;
 
-    private float _minPositionX;
-    private float _maxPositionX;
-    private float _positionY;
-    private float _minPositionZ;
-    private float _maxPositionZ;
+    public event Action<Transform> ObjectDespawned;
 
-    private void Awake()
+    protected virtual void Awake()
     {
-        _collider = GetComponent<Collider>();
-
-        _minPositionX = _collider.bounds.min.x;
-        _maxPositionX = _collider.bounds.max.x;
-        _positionY = _collider.bounds.center.y - _offsetY;
-        _minPositionZ = _collider.bounds.min.z;
-        _maxPositionZ = _collider.bounds.max.z;
-
-        _pool = new(CreateCube, ContinueAction, (cube) => cube.gameObject.SetActive(false), DestroyCube, true, _poolCapacity, _poolMaxSize);
+        _spawnerInfo = GetComponent<SpawnerInfo>();
+        _pool = new ObjectPool<T>(
+            CreateObject,
+            ActionOnGet,
+            (obj) => obj.gameObject.SetActive(false),
+            DestroyObject,
+            true,
+            _poolCapacity,
+            _poolMaxSize);
     }
 
-    private void Start()
+    private T CreateObject()
     {
-        StartCoroutine(GetCube());
+        T obj = Instantiate(_prefab);
+        _spawnerInfo.CountCreate();
+        obj.transform.SetParent(transform);
+        obj.Deactivated += ReturnObject;
+        return obj;
     }
 
-    private IEnumerator GetCube()
+    protected virtual void ActionOnGet(T obj)
     {
-        while (_isWork)
-        {
-            _pool.Get();
-            yield return new WaitForSeconds(_repeadRate);
-        }
+        _spawnerInfo.CountSpawn();
+        _spawnerInfo.CountActive(_pool.CountActive);
+        obj.ResetState();
+        obj.gameObject.SetActive(true);
     }
 
-    private void ReturnCube(Cube cube)
+    private void DestroyObject(T obj)
     {
-        StartCoroutine(ReturnToPool(cube));
+        obj.Deactivated -= ReturnObject;
+        Destroy(obj.gameObject);
     }
 
-    private Cube CreateCube()
+    private void ReturnObject(PoolableObject obj)
     {
-        Cube cube = Instantiate(_prefab);
-        cube.RemovedToPool += ReturnCube;
-        cube.gameObject.SetActive(false);
-
-        return cube;
+        ObjectDespawned?.Invoke(obj.transform);
+        _spawnerInfo.CountActive(_pool.CountActive);
+        _pool.Release(obj as T);
     }
 
-    private void ContinueAction(Cube cube)
+    protected T Spawn()
     {
-        Vector3 position = new(Random.Range(_minPositionX, _maxPositionX), _positionY, Random.Range(_minPositionZ, _maxPositionZ));
-        Vector3 rotation = new(Random.Range(0, _maxRotationEuler), Random.Range(0, _maxRotationEuler), Random.Range(0, _maxRotationEuler));
-
-        cube.TurnOn();
-        cube.transform.position = position;
-        cube.transform.rotation = Quaternion.Euler(rotation);
-        cube.gameObject.SetActive(true);
-    }
-
-    private void DestroyCube(Cube cube)
-    {
-        cube.RemovedToPool -= ReturnCube;
-        Destroy(cube.gameObject);
-    }
-
-    private IEnumerator ReturnToPool(Cube cube)
-    {
-        float timeLife = Random.Range(_minLifeTimeCube, _maxLifeTimeCube);
-        yield return new WaitForSeconds(timeLife);
-        _pool.Release(cube);
+        return _pool.Get();
     }
 }
